@@ -17,7 +17,7 @@ public class MainActivity extends Activity {
     private Bitmap bmp = null;
     private final String tag = "spectrum_analyzer";
     private GraphicsView myview;
-    private int mInterval = 200;
+    private int mInterval = 100;
     private Handler mHandler;
     float touchX = -1;
     float touchY = -1;
@@ -55,6 +55,7 @@ public class MainActivity extends Activity {
         bmp = Bitmap.createBitmap( myview.getWidth(), myview.getHeight(), Bitmap.Config.ARGB_8888);
         aFrequencies = new int[FREQUENCIES_COUNT][myview.getHeight()];
         currentRow = 0;
+        Log.i(tag, "aFrequencies.length = " + aFrequencies.length  + " aFrequencies[0].length = " + aFrequencies[0].length);
     }
 
     public class GraphicsView extends View
@@ -118,29 +119,31 @@ public class MainActivity extends Activity {
                 //here will be reading from mic
                 //FFT
                 //copy to array of frequencies
-                for(int i = 0; i < FREQUENCIES_COUNT; i++) {
-                    aFrequencies[i][currentRow] = r.nextInt(255);
+                for(int fr = 0; fr < FREQUENCIES_COUNT; fr++) {
+                    aFrequencies[fr][currentRow] = r.nextInt(255);
                 }
             }
-            if (bmp != null) {
+            if (bmp != null && aFrequencies != null) {
                 Canvas c = new Canvas(bmp);
                 Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 //bmp.setPixel(r.nextInt(bmp.getWidth()), r.nextInt(bmp.getWidth()),  Color.argb(255, r.nextInt(255), r.nextInt(255), r.nextInt(255)));
-                for(int i = 0; i < aFrequencies.length; i++) {
-                    int screenCurrentRow;
-                    if ((i + currentRow) > aFrequencies.length) {
-                        screenCurrentRow = (i + currentRow) - aFrequencies.length;
-                    } else {
-                        screenCurrentRow = i + currentRow;
+                for(int y = 0; y < aFrequencies[0].length; y++) {
+                    int arrayCurrentRow = y + currentRow - aFrequencies[0].length + 1;
+                    if (arrayCurrentRow < 0) {
+                        arrayCurrentRow = y + currentRow + 1;
                     }
-                    for(int j = 0; j < FREQUENCIES_COUNT; j++) {
-                        paint.setColor(Color.rgb(0, aFrequencies[j][screenCurrentRow], 0));
+                    for(int fr = 0; fr < FREQUENCIES_COUNT; fr++) {
+                        paint.setColor(Color.rgb(0, aFrequencies[fr][arrayCurrentRow], 0));
                         int rectHeight = 1;
-                        int rectWidth = bmp.getWidth() / FREQUENCIES_COUNT;
-                        c.drawRect(j, i, j+rectWidth, i+rectHeight, paint);
+                        int rectWidth = (int) (bmp.getWidth() / FREQUENCIES_COUNT);
+                        c.drawRect(fr*rectWidth, y, (fr+1)*rectWidth, y+rectHeight, paint);
                     }
                 }
-                currentRow++;
+                if ((currentRow+1) == bmp.getHeight()) {
+                    currentRow = 0;
+                } else {
+                    currentRow++;
+                }
                 myview.invalidate();
             }
             mHandler.postDelayed(mStatusChecker, mInterval);
